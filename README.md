@@ -1,21 +1,21 @@
 # WebSocket Spring Boot Application - 1-to-1 Chat
 
-## 📌 Overview
+## Overview
 This is a Spring Boot application that demonstrates **real-time 1-to-1 private messaging** using WebSockets. Messages are sent directly between users, not broadcast to everyone.
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
-✅ **Private Messaging**: Send messages to specific users only  
-✅ **User Identification**: Each user has a unique userId  
-✅ **Online/Offline Detection**: Server tracks connected users  
-✅ **Real-time Communication**: Instant message delivery  
-✅ **No Database Required**: In-memory session management  
+ **Private Messaging**: Send messages to specific users only  
+ **User Identification**: Each user has a unique userId  
+ **Online/Offline Detection**: Server tracks connected users  
+ **Real-time Communication**: Instant message delivery  
+ **No Database Required**: In-memory session management  
 
 ---
 
-## 🏗️ Project Structure
+##  Project Structure
 
 ### **Dependencies (pom.xml)**
 The key dependency for WebSocket support is:
@@ -33,7 +33,7 @@ This dependency includes:
 
 ---
 
-## 📁 File Explanations
+## File Explanations
 
 ### **1. WebSOcketsApplication.java**
 ```java
@@ -193,7 +193,7 @@ Located in `src/main/resources/static/chat.html`
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ### **1. Start the Application**
 ```bash
@@ -253,7 +253,7 @@ Online users: [bob]
 
 ---
 
-## 🔧 How WebSocket 1-to-1 Chat Works
+## How WebSocket 1-to-1 Chat Works
 
 ### **Connection Flow**
 ```
@@ -292,7 +292,7 @@ Alice (Browser)              Server (Spring Boot)           Bob (Browser)
 
 ---
 
-## 🐛 Troubleshooting CSP Error
+## Troubleshooting CSP Error
 
 ### **Problem**
 ```
@@ -305,7 +305,7 @@ Violates the following Content Security Policy directive: "connect-src chrome://
   - Browser extensions
   - External contexts with strict CSP
 
-### **Solution ✅**
+### **Solution **
 Use the provided `index.html` file which:
 - Is served from the same origin (`http://localhost:8080`)
 - Has no CSP restrictions
@@ -313,7 +313,7 @@ Use the provided `index.html` file which:
 
 ---
 
-## 📝 Additional Configuration
+##  Additional Configuration
 
 ### **Change Server Port**
 Edit `src/main/resources/application.properties`:
@@ -333,7 +333,7 @@ For more complex messaging patterns, consider STOMP protocol:
 
 ---
 
-## 🎯 Key Points
+## Key Points
 
 1. **Dependency**: `spring-boot-starter-websocket` provides all WebSocket classes
 2. **Endpoint**: WebSocket is available at `ws://localhost:8080/ws`
@@ -343,7 +343,7 @@ For more complex messaging patterns, consider STOMP protocol:
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
 ### **For Production**
 1. **Restrict Origins**:
@@ -369,7 +369,7 @@ For more complex messaging patterns, consider STOMP protocol:
 
 ---
 
-## 📚 References
+## References
 - [Spring WebSocket Documentation](https://docs.spring.io/spring-framework/reference/web/websocket.html)
 - [WebSocket API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 
