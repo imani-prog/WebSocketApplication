@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1-to-1 WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .user-setup {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .user-setup label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .user-setup input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+            width: 150px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .online-users {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .connect-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .disconnect-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .send-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .message-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .message-form input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .recipient-input {
+            width: 150px !important;
+            flex: none !important;
+        }
+        .messages {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .message {
+            padding: 8px 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        .message.received {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        .message.system {
+            background-color: #fff3cd;
+            color: #856404;
+            font-style: italic;
+            max-width: 100%;
+            text-align: center;
+        }
+        .message-header {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }
+        .info-box {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>1-to-1 WebSocket Chat</h1>
+        <div class="subtitle">Private messaging between users</div>
+
+        <div class="user-setup">
+            <label for="userIdInput">Your User ID:</label>
+            <input type="text" id="userIdInput" placeholder="e.g., alice" value="">
+            <button id="connectBtn" class="connect-btn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" class="disconnect-btn" onclick="disconnect()" disabled>Disconnect</button>
+        </div>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+
+        <div class="online-users" id="onlineUsers">
+            Online users: Check server console logs
+        </div>
+
+        <div class="info-box">
+            <strong>How to use:</strong>
+            1. Enter your userId (e.g., "alice") and click Connect<br>
+            2. Open another tab/window with a different userId (e.g., "bob")<br>
+            3. Enter the recipient's userId and type your message<br>
+            4. Messages are private - only the recipient sees them!
+        </div>
+
+        <div class="controls">
+            <div class="message-form">
+                <input type="text" id="recipientInput" class="recipient-input"
+                       placeholder="To: userId" disabled>
+                <input type="text" id="messageInput" placeholder="Type your message here..."
+                       onkeypress="handleKeyPress(event)" disabled>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()" disabled>Send</button>
+            </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let currentUserId = null;
+
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const recipientInput = document.getElementById('recipientInput');
+        const userIdInput = document.getElementById('userIdInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function connect() {
+            const userId = userIdInput.value.trim();
+
+            if (!userId) {
+                alert('Please enter your userId first!');
+                return;
+            }
+
+            currentUserId = userId;
+            const wsUrl = `ws://localhost:8080/ws?userId=${userId}`;
+
+            try {
+                websocket = new WebSocket(wsUrl);
+
+                websocket.onopen = function(event) {
+                    console.log('WebSocket connected:', event);
+                    updateStatus(true);
+                    addMessage(`You are now connected as "${currentUserId}"`, 'system');
+                };
+
+                websocket.onmessage = function(event) {
+                    console.log('Message received:', event.data);
+
+                    // Check if it's an error message
+                    if (event.data.includes('offline') || event.data.includes('Invalid format')) {
+                        addMessage(event.data, 'system');
+                    } else {
+                        addMessage(event.data, 'received');
+                    }
+                };
+
+                websocket.onerror = function(event) {
+                    console.error('WebSocket error:', event);
+                    addMessage('Error occurred!', 'system');
+                };
+
+                websocket.onclose = function(event) {
+                    console.log('WebSocket closed:', event);
+                    updateStatus(false);
+                    addMessage('Disconnected from server', 'system');
+                    currentUserId = null;
+                };
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                addMessage('Failed to connect: ' + error.message, 'system');
+            }
+        }
+
+        function disconnect() {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.close();
+            }
+        }
+
+        function sendMessage() {
+            const recipient = recipientInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (!recipient) {
+                alert('Please enter recipient userId!');
+                return;
+            }
+
+            if (!message) {
+                alert('Please enter a message!');
+                return;
+            }
+
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                // Format: receiverId:message
+                const payload = `${recipient}:${message}`;
+                websocket.send(payload);
+
+                // Show sent message
+                addMessage(`To ${recipient}: ${message}`, 'sent');
+                messageInput.value = '';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function updateStatus(isConnected) {
+            if (isConnected) {
+                statusDiv.textContent = `Connected as "${currentUserId}"`;
+                statusDiv.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+                recipientInput.disabled = false;
+                userIdInput.disabled = true;
+            } else {
+                statusDiv.textContent = 'Disconnected';
+                statusDiv.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                sendBtn.disabled = true;
+                messageInput.disabled = true;
+                recipientInput.disabled = true;
+                userIdInput.disabled = false;
+            }
+        }
+
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            messageDiv.textContent = text;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Set a random userId as default (for easy testing)
+        window.onload = function() {
+            const randomUser = 'user' + Math.floor(Math.random() * 1000);
+            userIdInput.value = randomUser;
+        };
+    </script>
+</body>
+</html>
+
